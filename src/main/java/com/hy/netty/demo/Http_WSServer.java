@@ -21,7 +21,7 @@ import java.io.RandomAccessFile;
  * @ Modified By：hyy.
  * @Version: $version$
  */
-public class HttpServer {
+public class Http_WSServer {
     public void openServer(){
         ServerBootstrap bootstrap = new ServerBootstrap();
         bootstrap.channel(NioServerSocketChannel.class);
@@ -43,6 +43,7 @@ public class HttpServer {
                 //新增Chunked handler，它的主要作用是支持异步发送大的码流（例如大的文件传输），
                 //但不占用过多的内存，防止发生Java内存溢出错误。
                 channel.pipeline().addLast("http-chunked", new ChunkedWriteHandler());
+                channel.pipeline().addLast("http-server", new HttpSereverHandler());
                 channel.pipeline().addLast("WebSocket-protocol",
                         new WebSocketServerProtocolHandler("/ws"));//include encode and decode
                 channel.pipeline().addLast("WebSocket-handler",
@@ -69,12 +70,12 @@ public class HttpServer {
                 channelHandlerContext.fireChannelRead(fullHttpRequest.retain());
                 return;
             }
-            File f =new File("E:\\hyy\\Barrage\\src\\main\\resources\\HelloWorld.html");
+            File f = new File("E:\\hyy\\Barrage\\src\\main\\resources\\HelloWorld.html");
             RandomAccessFile file = new RandomAccessFile(f, "r");
             DefaultHttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1,
                     HttpResponseStatus.OK);
-            response.headers().set(HttpHeaderNames.CONTENT_TYPE,"text/html; charset-UTF-8");
-            response.headers().set(HttpHeaderNames.CONTENT_LENGTH,file.length());
+            response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset-UTF-8");
+            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, file.length());
             channelHandlerContext.write(response);
             channelHandlerContext.write(new ChunkedNioFile(file.getChannel()));
             ChannelFuture future = channelHandlerContext.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
@@ -86,13 +87,13 @@ public class HttpServer {
 
         @Override
         protected void channelRead0(ChannelHandlerContext channelHandlerContext, TextWebSocketFrame textWebSocketFrame) throws Exception {
-            System.out.println("accept:" + textWebSocketFrame.text());
-            channelHandlerContext.writeAndFlush(new TextWebSocketFrame("hello world"));
+            System.out.println("from client accept:" + textWebSocketFrame.text());
+            channelHandlerContext.writeAndFlush(new TextWebSocketFrame("from server:hello world"));
         }
     }
 
     public static void main(String[] args) {
-        HttpSimpleServer simpleServer = new HttpSimpleServer();
+        Http_WSServer simpleServer = new Http_WSServer();
         simpleServer.openServer();
     }
 }
